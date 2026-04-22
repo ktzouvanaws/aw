@@ -1,0 +1,389 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Betting & Gaming API",
+    "description": "Mock REST API for sports betting and gaming",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://wo0ta99v05.execute-api.us-east-1.amazonaws.com/prod"
+    }
+  ],
+  "paths": {
+    "/sports": {
+      "get": {
+        "operationId": "listSports",
+        "summary": "List all available sports for betting",
+        "responses": {
+          "200": {
+            "description": "List of sports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sports": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "activeEvents": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sports/{sportId}/events": {
+      "get": {
+        "operationId": "getEventsBySport",
+        "summary": "Get upcoming and live events for a specific sport",
+        "parameters": [
+          {
+            "name": "sportId",
+            "in": "path",
+            "required": true,
+            "description": "Sport identifier (e.g., football, basketball, tennis)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of events for the sport",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sport": {
+                      "type": "string"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "home": {
+                            "type": "string"
+                          },
+                          "away": {
+                            "type": "string"
+                          },
+                          "league": {
+                            "type": "string"
+                          },
+                          "kickoff": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{eventId}/odds": {
+      "get": {
+        "operationId": "getOdds",
+        "summary": "Get current betting odds for a specific event",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "description": "Event identifier (e.g., evt-001)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Odds for the event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "eventId": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string"
+                    },
+                    "odds": {
+                      "type": "object"
+                    },
+                    "lastUpdated": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/live": {
+      "get": {
+        "operationId": "getLiveEvents",
+        "summary": "Get live scores for all currently in-play events",
+        "responses": {
+          "200": {
+            "description": "Live events with scores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "liveEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "eventId": {
+                            "type": "string"
+                          },
+                          "sport": {
+                            "type": "string"
+                          },
+                          "home": {
+                            "type": "string"
+                          },
+                          "away": {
+                            "type": "string"
+                          },
+                          "score": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bets": {
+      "get": {
+        "operationId": "getBetHistory",
+        "summary": "Get the history of all placed bets",
+        "responses": {
+          "200": {
+            "description": "Bet history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "totalBets": {
+                      "type": "integer"
+                    },
+                    "totalStaked": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "placeBet",
+        "summary": "Place a bet on an event",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "eventId",
+                  "selection",
+                  "stake"
+                ],
+                "properties": {
+                  "eventId": {
+                    "type": "string",
+                    "description": "Event identifier (e.g., evt-001)"
+                  },
+                  "selection": {
+                    "type": "string",
+                    "description": "Betting selection (e.g., homeWin, draw, awayWin)"
+                  },
+                  "stake": {
+                    "type": "number",
+                    "description": "Amount to bet in dollars"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bet placed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "bet": {
+                      "type": "object"
+                    },
+                    "remainingBalance": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bets/{betId}": {
+      "get": {
+        "operationId": "getBetById",
+        "summary": "Check the status of a specific bet",
+        "parameters": [
+          {
+            "name": "betId",
+            "in": "path",
+            "required": true,
+            "description": "Bet identifier (e.g., bet-abc12345)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bet details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bet": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/balance": {
+      "get": {
+        "operationId": "getBalance",
+        "summary": "Get the current account balance",
+        "responses": {
+          "200": {
+            "description": "Account balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "balance": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "pendingBets": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/promotions": {
+      "get": {
+        "operationId": "getPromotions",
+        "summary": "Get available promotions and bonuses",
+        "responses": {
+          "200": {
+            "description": "List of promotions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "promotions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "expires": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
