@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "REST API",
-    "description": "A comprehensive REST API for online sports betting and gaming. Provides access to sports events, real-time odds, bet placement, account management, and promotional offers. Supports football, basketball, tennis, horse racing, and esports markets.",
+    "description": "A comprehensive REST API for online sports betting and gaming. Provides access to sports events, real-time odds, bet placement, account management, promotional offers, and customer support. Supports football, basketball, tennis, horse racing, and esports markets.",
     "version": "1.0.0",
     "contact": {
       "name": "Betting Platform Team",
@@ -12,26 +12,57 @@
   "servers": [
     {
       "url": "https://{restApiId}.execute-api.{region}.amazonaws.com/{stage}",
-      "description": "API Gateway endpoint — update after deployment",
+      "description": "API Gateway endpoint \u00e2\u20ac\u201d update after deployment",
       "variables": {
-        "restApiId": { "default": "REPLACE_ME" },
-        "region": { "default": "us-east-1" },
-        "stage": { "default": "prod" }
+        "restApiId": {
+          "default": "REPLACE_ME"
+        },
+        "region": {
+          "default": "us-east-1"
+        },
+        "stage": {
+          "default": "prod"
+        }
       }
     }
   ],
   "tags": [
-    { "name": "Sports", "description": "Browse available sports and their events" },
-    { "name": "Events", "description": "View event details, odds, and live scores" },
-    { "name": "Betting", "description": "Place bets and track bet history" },
-    { "name": "Account", "description": "Manage account balance and funds" },
-    { "name": "Promotions", "description": "View available bonuses and promotional offers" }
+    {
+      "name": "Sports",
+      "description": "Browse available sports and their events"
+    },
+    {
+      "name": "Events",
+      "description": "View event details, odds, and live scores"
+    },
+    {
+      "name": "Betting",
+      "description": "Place bets and track bet history"
+    },
+    {
+      "name": "Account",
+      "description": "Manage account balance and funds"
+    },
+    {
+      "name": "Promotions",
+      "description": "View available bonuses and promotional offers"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer profiles, bet history, and transaction records"
+    },
+    {
+      "name": "Support",
+      "description": "Customer support ticket management"
+    }
   ],
   "paths": {
     "/sports": {
       "get": {
         "operationId": "listSports",
-        "tags": ["Sports"],
+        "tags": [
+          "Sports"
+        ],
         "summary": "List all available sports",
         "description": "Returns a list of all sports available for betting, including the number of currently active events for each sport. Use the sport ID from the response to fetch events for a specific sport.",
         "responses": {
@@ -53,8 +84,16 @@
                 },
                 "example": {
                   "sports": [
-                    { "id": "football", "name": "Football", "activeEvents": 24 },
-                    { "id": "basketball", "name": "Basketball", "activeEvents": 18 }
+                    {
+                      "id": "football",
+                      "name": "Football",
+                      "activeEvents": 24
+                    },
+                    {
+                      "id": "basketball",
+                      "name": "Basketball",
+                      "activeEvents": 18
+                    }
                   ]
                 }
               }
@@ -66,7 +105,10 @@
     "/sports/{sportId}/events": {
       "get": {
         "operationId": "getEventsBySport",
-        "tags": ["Sports", "Events"],
+        "tags": [
+          "Sports",
+          "Events"
+        ],
         "summary": "Get events for a specific sport",
         "description": "Returns all upcoming and live events for the specified sport. Each event includes the competing teams/players, league, scheduled kickoff time, and current status (upcoming or live). Use the event ID from the response to fetch odds or place bets.",
         "parameters": [
@@ -77,7 +119,13 @@
             "description": "Unique sport identifier. Valid values: football, basketball, tennis, horse_racing, esports",
             "schema": {
               "type": "string",
-              "enum": ["football", "basketball", "tennis", "horse_racing", "esports"]
+              "enum": [
+                "football",
+                "basketball",
+                "tennis",
+                "horse_racing",
+                "esports"
+              ]
             }
           }
         ],
@@ -89,7 +137,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "sport": { "type": "string", "description": "The sport identifier" },
+                    "sport": {
+                      "type": "string",
+                      "description": "The sport identifier"
+                    },
                     "events": {
                       "type": "array",
                       "description": "List of events",
@@ -102,7 +153,14 @@
                 "example": {
                   "sport": "football",
                   "events": [
-                    { "id": "evt-001", "home": "Arsenal", "away": "Chelsea", "league": "Premier League", "kickoff": "2026-04-25T15:00:00Z", "status": "upcoming" }
+                    {
+                      "id": "evt-001",
+                      "home": "Arsenal",
+                      "away": "Chelsea",
+                      "league": "Premier League",
+                      "kickoff": "2026-04-25T15:00:00Z",
+                      "status": "upcoming"
+                    }
                   ]
                 }
               }
@@ -112,8 +170,12 @@
             "description": "Sport not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" },
-                "example": { "error": "No events found for sport 'cricket'" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "No events found for sport 'cricket'"
+                }
               }
             }
           }
@@ -123,7 +185,9 @@
     "/events/{eventId}/odds": {
       "get": {
         "operationId": "getOdds",
-        "tags": ["Events"],
+        "tags": [
+          "Events"
+        ],
         "summary": "Get betting odds for an event",
         "description": "Returns the current betting odds for all available markets on the specified event. Odds are in decimal format (European style). For football: homeWin, draw, awayWin. For basketball: homeWin, awayWin, overTotal, underTotal. For tennis/esports: homeWin, awayWin. For horse racing: individual runner odds. Odds update in real-time and the lastUpdated timestamp indicates when they were last refreshed.",
         "parameters": [
@@ -132,7 +196,9 @@
             "in": "path",
             "required": true,
             "description": "Unique event identifier (e.g., evt-001). Obtain from the getEventsBySport endpoint.",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -143,20 +209,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "eventId": { "type": "string", "description": "The event identifier" },
-                    "event": { "type": "string", "description": "Human-readable event name (e.g., 'Arsenal vs Chelsea')" },
+                    "eventId": {
+                      "type": "string",
+                      "description": "The event identifier"
+                    },
+                    "event": {
+                      "type": "string",
+                      "description": "Human-readable event name (e.g., 'Arsenal vs Chelsea')"
+                    },
                     "odds": {
                       "type": "object",
                       "description": "Map of market selection to decimal odds. Keys vary by sport type.",
-                      "additionalProperties": { "type": "number" }
+                      "additionalProperties": {
+                        "type": "number"
+                      }
                     },
-                    "lastUpdated": { "type": "string", "format": "date-time", "description": "ISO 8601 timestamp of when odds were last updated" }
+                    "lastUpdated": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp of when odds were last updated"
+                    }
                   }
                 },
                 "example": {
                   "eventId": "evt-001",
                   "event": "Arsenal vs Chelsea",
-                  "odds": { "homeWin": 2.10, "draw": 3.40, "awayWin": 3.20 },
+                  "odds": {
+                    "homeWin": 2.1,
+                    "draw": 3.4,
+                    "awayWin": 3.2
+                  },
                   "lastUpdated": "2026-04-22T14:30:00Z"
                 }
               }
@@ -166,7 +248,9 @@
             "description": "Event not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -176,7 +260,9 @@
     "/events/live": {
       "get": {
         "operationId": "getLiveEvents",
-        "tags": ["Events"],
+        "tags": [
+          "Events"
+        ],
         "summary": "Get all live in-play events with scores",
         "description": "Returns all events currently in play across all sports, including real-time scores. Scores are formatted as a string appropriate to the sport (e.g., '2-1' for football, '98-102' for basketball, '6-4' for tennis).",
         "responses": {
@@ -198,7 +284,13 @@
                 },
                 "example": {
                   "liveEvents": [
-                    { "eventId": "evt-010", "sport": "basketball", "home": "Lakers", "away": "Celtics", "score": "98-102" }
+                    {
+                      "eventId": "evt-010",
+                      "sport": "basketball",
+                      "home": "Lakers",
+                      "away": "Celtics",
+                      "score": "98-102"
+                    }
                   ]
                 }
               }
@@ -210,7 +302,9 @@
     "/bets": {
       "get": {
         "operationId": "getBetHistory",
-        "tags": ["Betting"],
+        "tags": [
+          "Betting"
+        ],
         "summary": "Get bet history",
         "description": "Returns the complete history of all bets placed by the user, including active, won, and lost bets. Also provides aggregate statistics: total number of bets and total amount staked.",
         "responses": {
@@ -224,10 +318,18 @@
                     "bets": {
                       "type": "array",
                       "description": "List of all placed bets",
-                      "items": { "$ref": "#/components/schemas/Bet" }
+                      "items": {
+                        "$ref": "#/components/schemas/Bet"
+                      }
                     },
-                    "totalBets": { "type": "integer", "description": "Total number of bets placed" },
-                    "totalStaked": { "type": "number", "description": "Total amount staked across all bets in USD" }
+                    "totalBets": {
+                      "type": "integer",
+                      "description": "Total number of bets placed"
+                    },
+                    "totalStaked": {
+                      "type": "number",
+                      "description": "Total amount staked across all bets in USD"
+                    }
                   }
                 }
               }
@@ -237,9 +339,11 @@
       },
       "post": {
         "operationId": "placeBet",
-        "tags": ["Betting"],
+        "tags": [
+          "Betting"
+        ],
         "summary": "Place a new bet",
-        "description": "Places a bet on a specific market selection for an event. The stake is deducted from the account balance. Returns the bet confirmation with a unique bet ID, the locked-in odds, and the potential return (stake × odds). The bet status starts as 'active' and will be settled when the event concludes.",
+        "description": "Places a bet on a specific market selection for an event. The stake is deducted from the account balance. Returns the bet confirmation with a unique bet ID, the locked-in odds, and the potential return (stake \u00c3\u2014 odds). The bet status starts as 'active' and will be settled when the event concludes.",
         "requestBody": {
           "required": true,
           "description": "Bet details including the event, market selection, and stake amount",
@@ -247,7 +351,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["eventId", "selection", "stake"],
+                "required": [
+                  "eventId",
+                  "selection",
+                  "stake"
+                ],
                 "properties": {
                   "eventId": {
                     "type": "string",
@@ -267,7 +375,7 @@
               "example": {
                 "eventId": "evt-001",
                 "selection": "homeWin",
-                "stake": 25.00
+                "stake": 25.0
               }
             }
           }
@@ -280,9 +388,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "bet": { "$ref": "#/components/schemas/Bet" },
-                    "remainingBalance": { "type": "number", "description": "Account balance after the bet in USD" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "bet": {
+                      "$ref": "#/components/schemas/Bet"
+                    },
+                    "remainingBalance": {
+                      "type": "number",
+                      "description": "Account balance after the bet in USD"
+                    }
                   }
                 },
                 "example": {
@@ -291,13 +406,13 @@
                     "betId": "bet-a1b2c3d4",
                     "eventId": "evt-001",
                     "selection": "homeWin",
-                    "odds": 2.10,
-                    "stake": 25.00,
-                    "potentialReturn": 52.50,
+                    "odds": 2.1,
+                    "stake": 25.0,
+                    "potentialReturn": 52.5,
                     "status": "active",
                     "placedAt": "2026-04-22T14:35:00Z"
                   },
-                  "remainingBalance": 975.00
+                  "remainingBalance": 975.0
                 }
               }
             }
@@ -306,7 +421,9 @@
             "description": "Invalid bet parameters (bad selection, insufficient balance, or invalid stake)",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -314,7 +431,9 @@
             "description": "Event not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -324,7 +443,9 @@
     "/bets/{betId}": {
       "get": {
         "operationId": "getBetById",
-        "tags": ["Betting"],
+        "tags": [
+          "Betting"
+        ],
         "summary": "Get details of a specific bet",
         "description": "Returns the full details of a specific bet including the event, selection, odds at time of placement, stake, potential return, current status, and timestamp.",
         "parameters": [
@@ -333,7 +454,9 @@
             "in": "path",
             "required": true,
             "description": "Unique bet identifier returned when the bet was placed (e.g., bet-a1b2c3d4)",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -344,7 +467,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "bet": { "$ref": "#/components/schemas/Bet" }
+                    "bet": {
+                      "$ref": "#/components/schemas/Bet"
+                    }
                   }
                 }
               }
@@ -354,7 +479,9 @@
             "description": "Bet not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -364,7 +491,9 @@
     "/account/balance": {
       "get": {
         "operationId": "getBalance",
-        "tags": ["Account"],
+        "tags": [
+          "Account"
+        ],
         "summary": "Get account balance",
         "description": "Returns the current account balance in USD, along with the number of currently active (unsettled) bets. The balance decreases when bets are placed and increases when bets are won.",
         "responses": {
@@ -375,13 +504,22 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "balance": { "type": "number", "description": "Current balance in USD" },
-                    "currency": { "type": "string", "description": "Currency code (always USD)" },
-                    "pendingBets": { "type": "integer", "description": "Number of active unsettled bets" }
+                    "balance": {
+                      "type": "number",
+                      "description": "Current balance in USD"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "Currency code (always USD)"
+                    },
+                    "pendingBets": {
+                      "type": "integer",
+                      "description": "Number of active unsettled bets"
+                    }
                   }
                 },
                 "example": {
-                  "balance": 975.00,
+                  "balance": 975.0,
                   "currency": "USD",
                   "pendingBets": 1
                 }
@@ -394,7 +532,9 @@
     "/promotions": {
       "get": {
         "operationId": "getPromotions",
-        "tags": ["Promotions"],
+        "tags": [
+          "Promotions"
+        ],
         "summary": "Get available promotions",
         "description": "Returns all currently available promotions and bonus offers. Promotions include welcome bonuses, free bets, accumulator insurance, and enhanced odds offers. Each promotion has eligibility criteria and an expiration date.",
         "responses": {
@@ -408,14 +548,402 @@
                     "promotions": {
                       "type": "array",
                       "description": "List of available promotions",
-                      "items": { "$ref": "#/components/schemas/Promotion" }
+                      "items": {
+                        "$ref": "#/components/schemas/Promotion"
+                      }
                     }
                   }
                 },
                 "example": {
                   "promotions": [
-                    { "id": "promo-001", "name": "Welcome Bonus", "description": "100% match on first deposit up to $200", "minDeposit": 10, "expires": "2026-05-31" }
+                    {
+                      "id": "promo-001",
+                      "name": "Welcome Bonus",
+                      "description": "100% match on first deposit up to $200",
+                      "minDeposit": 10,
+                      "expires": "2026-05-31"
+                    }
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{accountId}": {
+      "get": {
+        "operationId": "getCustomer",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Get customer profile",
+        "description": "Returns the full customer profile including personal details, balance, loyalty tier, KYC status, betting limits, and self-exclusion status. Use this to look up a customer during support interactions.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Unique account identifier (e.g., default, cust-002, cust-003)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "customer": {
+                      "$ref": "#/components/schemas/Customer"
+                    }
+                  }
+                },
+                "example": {
+                  "customer": {
+                    "accountId": "default",
+                    "email": "john.doe@example.com",
+                    "name": "John Doe",
+                    "balance": 1000.0,
+                    "currency": "USD",
+                    "tier": "gold",
+                    "kycStatus": "verified",
+                    "registeredAt": "2025-11-15T09:00:00Z",
+                    "depositLimit": 5000.0,
+                    "weeklyBetLimit": 2000.0,
+                    "selfExcluded": false
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{accountId}/bets": {
+      "get": {
+        "operationId": "getCustomerBets",
+        "tags": [
+          "Customers",
+          "Betting"
+        ],
+        "summary": "Get a customer's bet history",
+        "description": "Returns all bets placed by a specific customer. Useful for support agents investigating bet-related issues or reviewing a customer's betting activity.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Unique account identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer's bet history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "bets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Bet"
+                      }
+                    },
+                    "totalBets": {
+                      "type": "integer",
+                      "description": "Total number of bets for this customer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{accountId}/transactions": {
+      "get": {
+        "operationId": "getCustomerTransactions",
+        "tags": [
+          "Customers",
+          "Account"
+        ],
+        "summary": "Get a customer's transaction history",
+        "description": "Returns all financial transactions for a customer including deposits, withdrawals, bonus credits, and bet settlements. Transactions are ordered by time. Use this to investigate missing deposits, verify bonus credits, or review account activity.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Unique account identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer's transaction history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "transactions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Transaction"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "accountId": "default",
+                  "transactions": [
+                    {
+                      "transactionId": "txn-001",
+                      "type": "deposit",
+                      "amount": 500.0,
+                      "method": "credit_card",
+                      "status": "completed",
+                      "createdAt": "2025-11-15T09:05:00Z",
+                      "description": "Initial deposit"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{accountId}/tickets": {
+      "get": {
+        "operationId": "getCustomerTickets",
+        "tags": [
+          "Customers",
+          "Support"
+        ],
+        "summary": "Get a customer's support tickets",
+        "description": "Returns all support tickets raised by a specific customer. Useful for reviewing a customer's support history and checking for open or unresolved issues.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Unique account identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer's support tickets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "tickets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SupportTicket"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/tickets": {
+      "get": {
+        "operationId": "listSupportTickets",
+        "tags": [
+          "Support"
+        ],
+        "summary": "List all support tickets",
+        "description": "Returns all support tickets across all customers. Includes open, in-progress, and resolved tickets with their priority and category.",
+        "responses": {
+          "200": {
+            "description": "All support tickets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tickets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SupportTicket"
+                      }
+                    },
+                    "totalTickets": {
+                      "type": "integer",
+                      "description": "Total number of tickets"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSupportTicket",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Create a new support ticket",
+        "description": "Creates a new customer support ticket. The ticket is assigned a unique ID and starts with 'open' status. Use this when a customer reports an issue that needs tracking.",
+        "requestBody": {
+          "required": true,
+          "description": "Support ticket details",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "accountId",
+                  "subject"
+                ],
+                "properties": {
+                  "accountId": {
+                    "type": "string",
+                    "description": "Customer account ID raising the ticket"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Brief subject line for the issue"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Detailed description of the issue"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "Issue category: betting, promotions, bonus, account, general"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "description": "Priority level: low, medium, high, urgent"
+                  }
+                }
+              },
+              "example": {
+                "accountId": "default",
+                "subject": "Wrong bet selection",
+                "description": "I accidentally bet on homeWin instead of awayWin for Arsenal vs Chelsea",
+                "category": "betting",
+                "priority": "medium"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ticket created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "ticket": {
+                      "$ref": "#/components/schemas/SupportTicket"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/tickets/{ticketId}": {
+      "get": {
+        "operationId": "getSupportTicket",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Get a specific support ticket",
+        "description": "Returns the full details of a specific support ticket including the customer account, subject, description, status, priority, and timestamps.",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "description": "Unique ticket identifier (e.g., tkt-001)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ticket details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ticket": {
+                      "$ref": "#/components/schemas/SupportTicket"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ticket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -430,63 +958,336 @@
         "type": "object",
         "description": "A sport available for betting",
         "properties": {
-          "id": { "type": "string", "description": "Unique sport identifier used in API calls" },
-          "name": { "type": "string", "description": "Human-readable sport name" },
-          "activeEvents": { "type": "integer", "description": "Number of currently active events for this sport" }
+          "id": {
+            "type": "string",
+            "description": "Unique sport identifier used in API calls"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable sport name"
+          },
+          "activeEvents": {
+            "type": "integer",
+            "description": "Number of currently active events for this sport"
+          }
         }
       },
       "Event": {
         "type": "object",
         "description": "A sporting event available for betting",
         "properties": {
-          "id": { "type": "string", "description": "Unique event identifier used in API calls" },
-          "home": { "type": "string", "description": "Home team or first player name" },
-          "away": { "type": "string", "description": "Away team or second player name" },
-          "league": { "type": "string", "description": "League or tournament name" },
-          "kickoff": { "type": "string", "format": "date-time", "description": "Scheduled start time in ISO 8601 format" },
-          "status": { "type": "string", "enum": ["upcoming", "live", "finished"], "description": "Current event status" }
+          "id": {
+            "type": "string",
+            "description": "Unique event identifier used in API calls"
+          },
+          "home": {
+            "type": "string",
+            "description": "Home team or first player name"
+          },
+          "away": {
+            "type": "string",
+            "description": "Away team or second player name"
+          },
+          "league": {
+            "type": "string",
+            "description": "League or tournament name"
+          },
+          "kickoff": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled start time in ISO 8601 format"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "live",
+              "finished"
+            ],
+            "description": "Current event status"
+          }
         }
       },
       "LiveEvent": {
         "type": "object",
         "description": "A live in-play event with current score",
         "properties": {
-          "eventId": { "type": "string", "description": "Unique event identifier" },
-          "sport": { "type": "string", "description": "Sport identifier" },
-          "home": { "type": "string", "description": "Home team or first player" },
-          "away": { "type": "string", "description": "Away team or second player" },
-          "score": { "type": "string", "description": "Current score (format varies by sport)" }
+          "eventId": {
+            "type": "string",
+            "description": "Unique event identifier"
+          },
+          "sport": {
+            "type": "string",
+            "description": "Sport identifier"
+          },
+          "home": {
+            "type": "string",
+            "description": "Home team or first player"
+          },
+          "away": {
+            "type": "string",
+            "description": "Away team or second player"
+          },
+          "score": {
+            "type": "string",
+            "description": "Current score (format varies by sport)"
+          }
         }
       },
       "Bet": {
         "type": "object",
         "description": "A placed bet with all details",
         "properties": {
-          "betId": { "type": "string", "description": "Unique bet identifier" },
-          "eventId": { "type": "string", "description": "Event the bet was placed on" },
-          "selection": { "type": "string", "description": "Market selection (e.g., homeWin, draw)" },
-          "odds": { "type": "number", "description": "Decimal odds locked in at time of placement" },
-          "stake": { "type": "number", "description": "Amount staked in USD" },
-          "potentialReturn": { "type": "number", "description": "Potential payout if bet wins (stake × odds)" },
-          "status": { "type": "string", "enum": ["active", "won", "lost", "void"], "description": "Current bet status" },
-          "placedAt": { "type": "string", "format": "date-time", "description": "Timestamp when bet was placed" }
+          "betId": {
+            "type": "string",
+            "description": "Unique bet identifier"
+          },
+          "eventId": {
+            "type": "string",
+            "description": "Event the bet was placed on"
+          },
+          "selection": {
+            "type": "string",
+            "description": "Market selection (e.g., homeWin, draw)"
+          },
+          "odds": {
+            "type": "number",
+            "description": "Decimal odds locked in at time of placement"
+          },
+          "stake": {
+            "type": "number",
+            "description": "Amount staked in USD"
+          },
+          "potentialReturn": {
+            "type": "number",
+            "description": "Potential payout if bet wins (stake \u00c3\u2014 odds)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "won",
+              "lost",
+              "void"
+            ],
+            "description": "Current bet status"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when bet was placed"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Account that placed the bet"
+          }
         }
       },
       "Promotion": {
         "type": "object",
         "description": "A promotional offer or bonus",
         "properties": {
-          "id": { "type": "string", "description": "Unique promotion identifier" },
-          "name": { "type": "string", "description": "Promotion name" },
-          "description": { "type": "string", "description": "Detailed description of the promotion and its terms" },
-          "expires": { "type": "string", "format": "date", "description": "Expiration date of the promotion" }
+          "id": {
+            "type": "string",
+            "description": "Unique promotion identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Promotion name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the promotion and its terms"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date",
+            "description": "Expiration date of the promotion"
+          }
         }
       },
       "Error": {
         "type": "object",
         "description": "Error response",
         "properties": {
-          "error": { "type": "string", "description": "Human-readable error message" }
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "description": "A customer account with profile and balance information",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Unique account identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer email address"
+          },
+          "name": {
+            "type": "string",
+            "description": "Customer full name"
+          },
+          "balance": {
+            "type": "number",
+            "description": "Current balance in USD"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code (USD)"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "bronze",
+              "silver",
+              "gold",
+              "platinum"
+            ],
+            "description": "Customer loyalty tier"
+          },
+          "kycStatus": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "verified",
+              "rejected"
+            ],
+            "description": "Know Your Customer verification status"
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Account registration timestamp"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last login timestamp"
+          },
+          "depositLimit": {
+            "type": "number",
+            "description": "Maximum deposit limit in USD"
+          },
+          "weeklyBetLimit": {
+            "type": "number",
+            "description": "Weekly betting limit in USD"
+          },
+          "selfExcluded": {
+            "type": "boolean",
+            "description": "Whether the customer has self-excluded from betting"
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "description": "A financial transaction on a customer account",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Account the transaction belongs to"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Unique transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "deposit",
+              "withdrawal",
+              "bonus",
+              "bet_settlement"
+            ],
+            "description": "Transaction type"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Transaction amount in USD (negative for withdrawals/losses)"
+          },
+          "method": {
+            "type": "string",
+            "description": "Payment method (credit_card, bank_transfer, system)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "completed",
+              "failed"
+            ],
+            "description": "Transaction status"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Transaction timestamp"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable transaction description"
+          }
+        }
+      },
+      "SupportTicket": {
+        "type": "object",
+        "description": "A customer support ticket",
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "description": "Unique ticket identifier"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Customer account that raised the ticket"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Ticket subject line"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the issue"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "resolved",
+              "closed"
+            ],
+            "description": "Current ticket status"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "urgent"
+            ],
+            "description": "Ticket priority level"
+          },
+          "category": {
+            "type": "string",
+            "description": "Issue category (betting, promotions, bonus, account, general)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Ticket creation timestamp"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
         }
       }
     }

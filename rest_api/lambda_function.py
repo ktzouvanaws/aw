@@ -1,201 +1,70 @@
 """
-Mock Betting & Gaming REST API — Lambda handler
+Betting & Gaming REST API — Lambda handler (DynamoDB-backed)
 
 Deployed behind API Gateway as a proxy integration.
+All data is read from and persisted to DynamoDB tables.
 """
 
 import json
 import random
 import uuid
+import os
+import boto3
 from datetime import datetime
+from decimal import Decimal
+from boto3.dynamodb.conditions import Key
 
-# --- Mock Data ---
 
-SPORTS = [
-    {"id": "football", "name": "Football", "activeEvents": 24},
-    {"id": "basketball", "name": "Basketball", "activeEvents": 18},
-    {"id": "tennis", "name": "Tennis", "activeEvents": 32},
-    {"id": "horse_racing", "name": "Horse Racing", "activeEvents": 12},
-    {"id": "esports", "name": "Esports", "activeEvents": 8},
-]
+# --- DynamoDB setup ---
 
-EVENTS = {
-    "football": [
-        {"id": "evt-001", "home": "Arsenal", "away": "Chelsea", "league": "Premier League", "kickoff": "2026-04-25T15:00:00Z", "status": "upcoming"},
-        {"id": "evt-002", "home": "Barcelona", "away": "Real Madrid", "league": "La Liga", "kickoff": "2026-04-25T20:00:00Z", "status": "upcoming"},
-        {"id": "evt-003", "home": "Bayern Munich", "away": "Dortmund", "league": "Bundesliga", "kickoff": "2026-04-26T17:30:00Z", "status": "upcoming"},
-    ],
-    "basketball": [
-        {"id": "evt-010", "home": "Lakers", "away": "Celtics", "league": "NBA", "kickoff": "2026-04-25T19:30:00Z", "status": "live"},
-        {"id": "evt-011", "home": "Warriors", "away": "Bucks", "league": "NBA", "kickoff": "2026-04-26T21:00:00Z", "status": "upcoming"},
-    ],
-    "tennis": [
-        {"id": "evt-020", "home": "Djokovic", "away": "Alcaraz", "league": "ATP Masters", "kickoff": "2026-04-25T14:00:00Z", "status": "live"},
-        {"id": "evt-021", "home": "Sinner", "away": "Medvedev", "league": "ATP Masters", "kickoff": "2026-04-26T16:00:00Z", "status": "upcoming"},
-    ],
-    "horse_racing": [
-        {"id": "evt-030", "home": "Ascot - 3:15 Race", "away": "8 runners", "league": "Royal Ascot", "kickoff": "2026-04-25T15:15:00Z", "status": "upcoming"},
-    ],
-    "esports": [
-        {"id": "evt-040", "home": "T1", "away": "Gen.G", "league": "LCK", "kickoff": "2026-04-25T12:00:00Z", "status": "live"},
-    ],
-}
+REGION = os.environ.get("AWS_REGION", "us-east-1")
+TABLE_PREFIX = os.environ.get("TABLE_PREFIX", "Betting")
 
-ODDS = {
-    "evt-001": {"homeWin": 2.10, "draw": 3.40, "awayWin": 3.20},
-    "evt-002": {"homeWin": 1.85, "draw": 3.60, "awayWin": 4.00},
-    "evt-003": {"homeWin": 1.70, "draw": 3.80, "awayWin": 4.50},
-    "evt-010": {"homeWin": 1.90, "awayWin": 1.95, "overTotal": 1.85, "underTotal": 2.00},
-    "evt-011": {"homeWin": 2.20, "awayWin": 1.70, "overTotal": 1.90, "underTotal": 1.95},
-    "evt-020": {"homeWin": 1.60, "awayWin": 2.30},
-    "evt-021": {"homeWin": 1.75, "awayWin": 2.10},
-    "evt-030": {"runner1": 3.50, "runner2": 5.00, "runner3": 7.00, "runner4": 8.50, "runner5": 12.00},
-    "evt-040": {"homeWin": 1.45, "awayWin": 2.70},
-}
+dynamodb = boto3.resource("dynamodb", region_name=REGION)
 
-PROMOTIONS = [
-    {"id": "promo-001", "name": "Welcome Bonus", "description": "100% match on first deposit up to $200", "minDeposit": 10, "expires": "2026-05-31"},
-    {"id": "promo-002", "name": "Free Bet Friday", "description": "Place 3 bets on Friday, get a $10 free bet", "minOdds": 1.50, "expires": "2026-04-30"},
-    {"id": "promo-003", "name": "Acca Insurance", "description": "5+ leg accumulator insurance - stake back if one leg loses", "minLegs": 5, "expires": "2026-06-30"},
-    {"id": "promo-004", "name": "Enhanced Odds", "description": "Arsenal to win at 5.00 (was 2.10) - max stake $20", "eventId": "evt-001", "expires": "2026-04-25"},
-]
+sports_table = dynamodb.Table(f"{TABLE_PREFIX}Sports")
+events_table = dynamodb.Table(f"{TABLE_PREFIX}Events")
+odds_table = dynamodb.Table(f"{TABLE_PREFIX}Odds")
+bets_table = dynamodb.Table(f"{TABLE_PREFIX}Bets")
+accounts_table = dynamodb.Table(f"{TABLE_PREFIX}Accounts")
+promotions_table = dynamodb.Table(f"{TABLE_PREFIX}Promotions")
+transactions_table = dynamodb.Table(f"{TABLE_PREFIX}Transactions")
+tickets_table = dynamodb.Table(f"{TABLE_PREFIX}SupportTickets")
 
-# In-memory state (resets on cold start — fine for a mock)
-BETS = {}
-BALANCE = {"amount": 1000.00, "currency": "USD"}
+DEFAULT_ACCOUNT_ID = "default"
+
+
+# --- Helpers ---
+
+class DecimalEncoder(json.JSONEncoder):
+    """Handle Decimal types returned by DynamoDB."""
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            if obj % 1 == 0:
+                return int(obj)
+            return float(obj)
+        return super().default(obj)
 
 
 def respond(status_code, body):
     return {
         "statusCode": status_code,
         "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(body),
+        "body": json.dumps(body, cls=DecimalEncoder),
     }
 
 
-def lambda_handler(event, context):
-    method = event.get("httpMethod", "GET")
-    path = event.get("path", "/")
-    path_params = event.get("pathParameters") or {}
-    query_params = event.get("queryStringParameters") or {}
-    body = {}
-    if event.get("body"):
-        body = json.loads(event["body"])
-
-    # --- Routes ---
-
-    # GET /sports
-    if path == "/sports" and method == "GET":
-        return respond(200, {"sports": SPORTS})
-
-    # GET /sports/{sportId}/events
-    if path.startswith("/sports/") and path.endswith("/events") and method == "GET":
-        sport_id = path.split("/")[2]
-        events = EVENTS.get(sport_id, [])
-        if not events:
-            return respond(404, {"error": f"No events found for sport '{sport_id}'"})
-        return respond(200, {"sport": sport_id, "events": events})
-
-    # GET /events/{eventId}/odds
-    if path.startswith("/events/") and path.endswith("/odds") and method == "GET":
-        event_id = path.split("/")[2]
-        odds = ODDS.get(event_id)
-        if not odds:
-            return respond(404, {"error": f"No odds found for event '{event_id}'"})
-        event_info = _find_event(event_id)
-        return respond(200, {
-            "eventId": event_id,
-            "event": f"{event_info['home']} vs {event_info['away']}" if event_info else "Unknown",
-            "odds": odds,
-            "lastUpdated": datetime.utcnow().isoformat() + "Z",
+def _get_account():
+    """Get the default account, creating it if it doesn't exist."""
+    result = accounts_table.get_item(Key={"accountId": DEFAULT_ACCOUNT_ID})
+    if "Item" not in result:
+        accounts_table.put_item(Item={
+            "accountId": DEFAULT_ACCOUNT_ID,
+            "balance": Decimal("1000.00"),
+            "currency": "USD",
         })
-
-    # GET /events/live
-    if path == "/events/live" and method == "GET":
-        live = []
-        for sport, events in EVENTS.items():
-            for evt in events:
-                if evt["status"] == "live":
-                    live.append({
-                        "eventId": evt["id"],
-                        "sport": sport,
-                        "home": evt["home"],
-                        "away": evt["away"],
-                        "score": _mock_score(sport),
-                    })
-        return respond(200, {"liveEvents": live})
-
-    # POST /bets
-    if path == "/bets" and method == "POST":
-        event_id = body.get("eventId")
-        selection = body.get("selection")
-        stake = body.get("stake", 0)
-
-        if not event_id or not selection:
-            return respond(400, {"error": "eventId and selection are required"})
-
-        odds = ODDS.get(event_id)
-        if not odds:
-            return respond(404, {"error": f"Event '{event_id}' not found"})
-        if selection not in odds:
-            return respond(400, {"error": f"Invalid selection '{selection}'", "validSelections": list(odds.keys())})
-        if stake <= 0:
-            return respond(400, {"error": "Stake must be greater than 0"})
-        if stake > BALANCE["amount"]:
-            return respond(400, {"error": f"Insufficient balance: ${BALANCE['amount']:.2f}"})
-
-        bet_id = f"bet-{uuid.uuid4().hex[:8]}"
-        selected_odds = odds[selection]
-        potential_return = round(stake * selected_odds, 2)
-        BALANCE["amount"] -= stake
-
-        bet = {
-            "betId": bet_id,
-            "eventId": event_id,
-            "selection": selection,
-            "odds": selected_odds,
-            "stake": stake,
-            "potentialReturn": potential_return,
-            "status": "active",
-            "placedAt": datetime.utcnow().isoformat() + "Z",
-        }
-        BETS[bet_id] = bet
-        return respond(201, {"message": "Bet placed successfully", "bet": bet, "remainingBalance": round(BALANCE["amount"], 2)})
-
-    # GET /bets
-    if path == "/bets" and method == "GET":
-        bets = list(BETS.values())
-        return respond(200, {"bets": bets, "totalBets": len(bets), "totalStaked": round(sum(b["stake"] for b in bets), 2)})
-
-    # GET /bets/{betId}
-    if path.startswith("/bets/") and method == "GET" and path.count("/") == 2:
-        bet_id = path.split("/")[2]
-        bet = BETS.get(bet_id)
-        if not bet:
-            return respond(404, {"error": f"Bet '{bet_id}' not found"})
-        return respond(200, {"bet": bet})
-
-    # GET /account/balance
-    if path == "/account/balance" and method == "GET":
-        return respond(200, {
-            "balance": round(BALANCE["amount"], 2),
-            "currency": BALANCE["currency"],
-            "pendingBets": len([b for b in BETS.values() if b["status"] == "active"]),
-        })
-
-    # GET /promotions
-    if path == "/promotions" and method == "GET":
-        return respond(200, {"promotions": PROMOTIONS})
-
-    return respond(404, {"error": f"Route not found: {method} {path}"})
-
-
-def _find_event(event_id):
-    for events in EVENTS.values():
-        for evt in events:
-            if evt["id"] == event_id:
-                return evt
-    return None
+        return {"accountId": DEFAULT_ACCOUNT_ID, "balance": Decimal("1000.00"), "currency": "USD"}
+    return result["Item"]
 
 
 def _mock_score(sport):
@@ -208,3 +77,253 @@ def _mock_score(sport):
     elif sport == "esports":
         return f"{random.randint(0, 2)}-{random.randint(0, 2)}"
     return "N/A"
+
+
+# --- Lambda handler ---
+
+def lambda_handler(event, context):
+    method = event.get("httpMethod", "GET")
+    path = event.get("path", "/")
+    body = {}
+    if event.get("body"):
+        body = json.loads(event["body"])
+
+    # --- Routes ---
+
+    # GET /sports
+    if path == "/sports" and method == "GET":
+        result = sports_table.scan()
+        return respond(200, {"sports": result["Items"]})
+
+    # GET /sports/{sportId}/events
+    if path.startswith("/sports/") and path.endswith("/events") and method == "GET":
+        sport_id = path.split("/")[2]
+        result = events_table.query(
+            KeyConditionExpression=Key("sportId").eq(sport_id)
+        )
+        events = result["Items"]
+        if not events:
+            return respond(404, {"error": f"No events found for sport '{sport_id}'"})
+        return respond(200, {"sport": sport_id, "events": events})
+
+    # GET /events/{eventId}/odds
+    if path.startswith("/events/") and path.endswith("/odds") and method == "GET":
+        event_id = path.split("/")[2]
+        result = odds_table.get_item(Key={"eventId": event_id})
+        if "Item" not in result:
+            return respond(404, {"error": f"No odds found for event '{event_id}'"})
+
+        odds_item = result["Item"]
+        odds = odds_item.get("odds", {})
+
+        # Find event info for display name
+        event_name = "Unknown"
+        all_events = events_table.scan()["Items"]
+        for evt in all_events:
+            if evt["id"] == event_id:
+                event_name = f"{evt['home']} vs {evt['away']}"
+                break
+
+        return respond(200, {
+            "eventId": event_id,
+            "event": event_name,
+            "odds": odds,
+            "lastUpdated": datetime.utcnow().isoformat() + "Z",
+        })
+
+    # GET /events/live
+    if path == "/events/live" and method == "GET":
+        result = events_table.query(
+            IndexName="StatusIndex",
+            KeyConditionExpression=Key("status").eq("live")
+        )
+        live = []
+        for evt in result["Items"]:
+            live.append({
+                "eventId": evt["id"],
+                "sport": evt["sportId"],
+                "home": evt["home"],
+                "away": evt["away"],
+                "score": _mock_score(evt["sportId"]),
+            })
+        return respond(200, {"liveEvents": live})
+
+    # POST /bets
+    if path == "/bets" and method == "POST":
+        event_id = body.get("eventId")
+        selection = body.get("selection")
+        stake = body.get("stake", 0)
+
+        if not event_id or not selection:
+            return respond(400, {"error": "eventId and selection are required"})
+
+        # Get odds from DynamoDB
+        odds_result = odds_table.get_item(Key={"eventId": event_id})
+        if "Item" not in odds_result:
+            return respond(404, {"error": f"Event '{event_id}' not found"})
+
+        odds = odds_result["Item"].get("odds", {})
+        if selection not in odds:
+            return respond(400, {"error": f"Invalid selection '{selection}'", "validSelections": list(odds.keys())})
+        if stake <= 0:
+            return respond(400, {"error": "Stake must be greater than 0"})
+
+        # Get account balance
+        account = _get_account()
+        balance = float(account["balance"])
+
+        if stake > balance:
+            return respond(400, {"error": f"Insufficient balance: ${balance:.2f}"})
+
+        # Place the bet
+        bet_id = f"bet-{uuid.uuid4().hex[:8]}"
+        selected_odds = float(odds[selection])
+        potential_return = round(stake * selected_odds, 2)
+        new_balance = round(balance - stake, 2)
+
+        account_id = body.get("accountId", DEFAULT_ACCOUNT_ID)
+
+        bet = {
+            "betId": bet_id,
+            "accountId": account_id,
+            "eventId": event_id,
+            "selection": selection,
+            "odds": Decimal(str(selected_odds)),
+            "stake": Decimal(str(stake)),
+            "potentialReturn": Decimal(str(potential_return)),
+            "status": "active",
+            "placedAt": datetime.utcnow().isoformat() + "Z",
+        }
+
+        # Write bet to DynamoDB
+        bets_table.put_item(Item=bet)
+
+        # Update account balance
+        accounts_table.update_item(
+            Key={"accountId": DEFAULT_ACCOUNT_ID},
+            UpdateExpression="SET balance = :b",
+            ExpressionAttributeValues={":b": Decimal(str(new_balance))},
+        )
+
+        return respond(201, {
+            "message": "Bet placed successfully",
+            "bet": bet,
+            "remainingBalance": new_balance,
+        })
+
+    # GET /bets
+    if path == "/bets" and method == "GET":
+        result = bets_table.scan()
+        bets = result["Items"]
+        total_staked = sum(float(b["stake"]) for b in bets)
+        return respond(200, {
+            "bets": bets,
+            "totalBets": len(bets),
+            "totalStaked": round(total_staked, 2),
+        })
+
+    # GET /bets/{betId}
+    if path.startswith("/bets/") and method == "GET" and path.count("/") == 2:
+        bet_id = path.split("/")[2]
+        result = bets_table.get_item(Key={"betId": bet_id})
+        if "Item" not in result:
+            return respond(404, {"error": f"Bet '{bet_id}' not found"})
+        return respond(200, {"bet": result["Item"]})
+
+    # GET /account/balance
+    if path == "/account/balance" and method == "GET":
+        account = _get_account()
+
+        # Count active bets
+        bets_result = bets_table.scan()
+        pending = len([b for b in bets_result["Items"] if b.get("status") == "active"])
+
+        return respond(200, {
+            "balance": account["balance"],
+            "currency": account["currency"],
+            "pendingBets": pending,
+        })
+
+    # GET /promotions
+    if path == "/promotions" and method == "GET":
+        result = promotions_table.scan()
+        return respond(200, {"promotions": result["Items"]})
+
+    # --- Customer Support Routes ---
+
+    # GET /customers/{accountId}
+    if path.startswith("/customers/") and method == "GET" and path.count("/") == 2:
+        account_id = path.split("/")[2]
+        result = accounts_table.get_item(Key={"accountId": account_id})
+        if "Item" not in result:
+            return respond(404, {"error": f"Customer '{account_id}' not found"})
+        return respond(200, {"customer": result["Item"]})
+
+    # GET /customers/{accountId}/bets
+    if path.startswith("/customers/") and path.endswith("/bets") and method == "GET":
+        account_id = path.split("/")[2]
+        result = bets_table.query(
+            IndexName="AccountIndex",
+            KeyConditionExpression=Key("accountId").eq(account_id)
+        )
+        return respond(200, {"accountId": account_id, "bets": result["Items"], "totalBets": len(result["Items"])})
+
+    # GET /customers/{accountId}/transactions
+    if path.startswith("/customers/") and path.endswith("/transactions") and method == "GET":
+        account_id = path.split("/")[2]
+        result = transactions_table.query(
+            KeyConditionExpression=Key("accountId").eq(account_id)
+        )
+        return respond(200, {"accountId": account_id, "transactions": result["Items"]})
+
+    # GET /support/tickets
+    if path == "/support/tickets" and method == "GET":
+        result = tickets_table.scan()
+        return respond(200, {"tickets": result["Items"], "totalTickets": len(result["Items"])})
+
+    # GET /support/tickets/{ticketId}
+    if path.startswith("/support/tickets/") and method == "GET" and path.count("/") == 3:
+        ticket_id = path.split("/")[3]
+        result = tickets_table.get_item(Key={"ticketId": ticket_id})
+        if "Item" not in result:
+            return respond(404, {"error": f"Ticket '{ticket_id}' not found"})
+        return respond(200, {"ticket": result["Item"]})
+
+    # GET /customers/{accountId}/tickets
+    if path.startswith("/customers/") and path.endswith("/tickets") and method == "GET":
+        account_id = path.split("/")[2]
+        result = tickets_table.query(
+            IndexName="AccountIndex",
+            KeyConditionExpression=Key("accountId").eq(account_id)
+        )
+        return respond(200, {"accountId": account_id, "tickets": result["Items"]})
+
+    # POST /support/tickets
+    if path == "/support/tickets" and method == "POST":
+        account_id = body.get("accountId")
+        subject = body.get("subject")
+        description = body.get("description", "")
+        category = body.get("category", "general")
+        priority = body.get("priority", "medium")
+
+        if not account_id or not subject:
+            return respond(400, {"error": "accountId and subject are required"})
+
+        ticket_id = f"tkt-{uuid.uuid4().hex[:8]}"
+        now = datetime.utcnow().isoformat() + "Z"
+
+        ticket = {
+            "ticketId": ticket_id,
+            "accountId": account_id,
+            "subject": subject,
+            "description": description,
+            "category": category,
+            "priority": priority,
+            "status": "open",
+            "createdAt": now,
+            "updatedAt": now,
+        }
+        tickets_table.put_item(Item=ticket)
+        return respond(201, {"message": "Ticket created", "ticket": ticket})
+
+    return respond(404, {"error": f"Route not found: {method} {path}"})
