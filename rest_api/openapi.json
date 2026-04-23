@@ -352,11 +352,16 @@
               "schema": {
                 "type": "object",
                 "required": [
+                  "accountId",
                   "eventId",
                   "selection",
                   "stake"
                 ],
                 "properties": {
+                  "accountId": {
+                    "type": "string",
+                    "description": "Account ID placing the bet (e.g., default, cust-002, cust-003). The stake will be deducted from this account's balance."
+                  },
                   "eventId": {
                     "type": "string",
                     "description": "Event identifier to bet on (e.g., evt-001). Must be an active event."
@@ -373,6 +378,7 @@
                 }
               },
               "example": {
+                "accountId": "default",
                 "eventId": "evt-001",
                 "selection": "homeWin",
                 "stake": 25.0
@@ -495,7 +501,18 @@
           "Account"
         ],
         "summary": "Get account balance",
-        "description": "Returns the current account balance in USD, along with the number of currently active (unsettled) bets. The balance decreases when bets are placed and increases when bets are won.",
+        "description": "Returns the current account balance in USD for the specified account, along with the number of currently active (unsettled) bets. The balance decreases when bets are placed and increases when bets are won. The accountId query parameter is required.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": true,
+            "description": "The account ID to retrieve the balance for (e.g., default, cust-002, cust-003)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Current account balance and pending bet count",
@@ -504,6 +521,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "description": "The account ID"
+                    },
                     "balance": {
                       "type": "number",
                       "description": "Current balance in USD"
@@ -519,9 +540,30 @@
                   }
                 },
                 "example": {
+                  "accountId": "default",
                   "balance": 975.0,
                   "currency": "USD",
                   "pendingBets": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing accountId parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
