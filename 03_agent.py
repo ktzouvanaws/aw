@@ -11,7 +11,7 @@ from strands.tools.mcp import MCPClient
 app = BedrockAgentCoreApp()
 
 
-model_id = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+model_id = "global.anthropic.claude-opus-4-6-v1"
 model = BedrockModel(
     model_id=model_id,
 )

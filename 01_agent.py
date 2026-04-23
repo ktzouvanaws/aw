@@ -29,14 +29,14 @@ def weather(city: str):
     return weather
 
 
-model_id = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+model_id = "global.anthropic.claude-opus-4-6-v1"
 model = BedrockModel(
     model_id=model_id,
 )
 
 os.environ["TAVILY_API_KEY"] = "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"
 
-model_id = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+model_id = "global.anthropic.claude-opus-4-6-v1"
 model = BedrockModel(
     model_id=model_id,
 )
