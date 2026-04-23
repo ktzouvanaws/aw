@@ -1,0 +1,41 @@
+# Agent Demo Prompts — Betting & Gaming
+# Use these prompts during the live demo to showcase agent capabilities.
+# Each prompt triggers multi-step reasoning and tool chaining.
+
+# ============================================================
+# SCENARIO 1: The Smart Betting Assistant
+# ============================================================
+
+## 1.1 Main demo prompt
+I have a budget of $50. Find me the best value football bet right now — check the events, compare the odds, pick the one with the highest potential return, and place the bet for me. Then show me my updated balance.
+
+## 1.2 Cross-domain reasoning (follow-up)
+Are there any promotions I could have used for that bet?
+
+## 1.3 Live awareness (follow-up)
+What games are live right now? Place a $20 bet on whichever has the best odds.
+
+## 1.4 Portfolio view (follow-up)
+Give me a summary of all my bets and my remaining balance.
+
+# ============================================================
+# SCENARIO 2: Customer Support Agent
+# ============================================================
+
+## 2.1 Main demo prompt — bet investigation + policy lookup
+I placed a bet on Arsenal vs Chelsea but I think I picked the wrong selection. Can you check my recent bets, tell me what I picked, and what the other options and odds were? Also, what's the policy on changing or cancelling a bet?
+
+## 2.2 Responsible gambling (Knowledge Base heavy)
+I've been betting a lot this week. What are my options to set limits on my account?
+
+## 2.3 Promo eligibility — API + Knowledge Base reasoning
+I placed 3 bets on Friday but didn't get my free bet. Am I eligible for the Free Bet Friday promotion?
+
+## 2.4 Dispute resolution — live event + bet status + policy
+My bet on Lakers vs Celtics should have won but it still shows as active. What's going on?
+
+## 2.5 Account inquiry — customer profile + transactions
+Can you pull up my account details and show me my recent transactions? I think a deposit is missing.
+
+## 2.6 Full support escalation — multi-step
+I'm a new customer, I deposited $200 yesterday but I don't see the welcome bonus in my account. Can you check my deposit history, verify I'm eligible for the Welcome Bonus promotion, and tell me when I should expect it?
