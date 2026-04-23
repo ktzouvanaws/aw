@@ -29,20 +29,36 @@ mcp_client = MCPClient(
 # Configure TAVILY
 os.environ["TAVILY_API_KEY"] = "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"
 
-agent = Agent(
-    model=model,
-    tools=[tavily_search, mcp_client],
-    system_prompt="You're a helpful assistant."
+BASE_SYSTEM_PROMPT = (
+    "You are a helpful betting and customer support assistant for a sports betting platform."
 )
 
 
 @app.entrypoint
 def strands_agent_bedrock(payload):
     """
-    Invoke the agent with a payload
+    Invoke the agent with a payload.
+    Accepts optional accountId to scope all customer-specific API calls.
     """
     user_input = payload.get("prompt")
+    account_id = payload.get("accountId")
     print("User input:", user_input)
+    print("Account ID:", account_id)
+
+    system_prompt = BASE_SYSTEM_PROMPT
+    if account_id:
+        system_prompt += (
+            f"\n\nThe customer you are assisting has accountId: {account_id}. "
+            f"Always use this accountId when calling any customer-specific API "
+            f"(getBalance, getCustomerBets, getCustomerTransactions, placeBet, etc.)."
+        )
+
+    agent = Agent(
+        model=model,
+        tools=[tavily_search, mcp_client],
+        system_prompt=system_prompt,
+    )
+
     response = agent(user_input)
     return response.message['content'][0]['text']
 
