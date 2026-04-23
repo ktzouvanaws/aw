@@ -54,16 +54,12 @@ def respond(status_code, body):
     }
 
 
-def _get_account():
-    """Get the default account, creating it if it doesn't exist."""
-    result = accounts_table.get_item(Key={"accountId": DEFAULT_ACCOUNT_ID})
+def _get_account(account_id=None):
+    """Get an account by ID. Falls back to DEFAULT_ACCOUNT_ID if not provided."""
+    aid = account_id or DEFAULT_ACCOUNT_ID
+    result = accounts_table.get_item(Key={"accountId": aid})
     if "Item" not in result:
-        accounts_table.put_item(Item={
-            "accountId": DEFAULT_ACCOUNT_ID,
-            "balance": Decimal("1000.00"),
-            "currency": "USD",
-        })
-        return {"accountId": DEFAULT_ACCOUNT_ID, "balance": Decimal("1000.00"), "currency": "USD"}
+        return None
     return result["Item"]
 
 
@@ -153,6 +149,7 @@ def lambda_handler(event, context):
         event_id = body.get("eventId")
         selection = body.get("selection")
         stake = body.get("stake", 0)
+        account_id = body.get("accountId", DEFAULT_ACCOUNT_ID)
 
         if not event_id or not selection:
             return respond(400, {"error": "eventId and selection are required"})
@@ -169,7 +166,9 @@ def lambda_handler(event, context):
             return respond(400, {"error": "Stake must be greater than 0"})
 
         # Get account balance
-        account = _get_account()
+        account = _get_account(account_id)
+        if not account:
+            return respond(404, {"error": f"Account '{account_id}' not found"})
         balance = float(account["balance"])
 
         if stake > balance:
@@ -180,8 +179,6 @@ def lambda_handler(event, context):
         selected_odds = float(odds[selection])
         potential_return = round(stake * selected_odds, 2)
         new_balance = round(balance - stake, 2)
-
-        account_id = body.get("accountId", DEFAULT_ACCOUNT_ID)
 
         bet = {
             "betId": bet_id,
@@ -200,7 +197,7 @@ def lambda_handler(event, context):
 
         # Update account balance
         accounts_table.update_item(
-            Key={"accountId": DEFAULT_ACCOUNT_ID},
+            Key={"accountId": account_id},
             UpdateExpression="SET balance = :b",
             ExpressionAttributeValues={":b": Decimal(str(new_balance))},
         )
@@ -232,15 +229,23 @@ def lambda_handler(event, context):
 
     # GET /account/balance
     if path == "/account/balance" and method == "GET":
-        account = _get_account()
+        query_params = event.get("queryStringParameters") or {}
+        account_id = query_params.get("accountId", DEFAULT_ACCOUNT_ID)
+        account = _get_account(account_id)
+        if not account:
+            return respond(404, {"error": f"Account '{account_id}' not found"})
 
-        # Count active bets
-        bets_result = bets_table.scan()
+        # Count active bets for this account
+        bets_result = bets_table.query(
+            IndexName="AccountIndex",
+            KeyConditionExpression=Key("accountId").eq(account_id)
+        )
         pending = len([b for b in bets_result["Items"] if b.get("status") == "active"])
 
         return respond(200, {
+            "accountId": account_id,
             "balance": account["balance"],
-            "currency": account["currency"],
+            "currency": account.get("currency", "USD"),
             "pendingBets": pending,
         })
 
