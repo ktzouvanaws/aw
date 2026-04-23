@@ -33,6 +33,14 @@ BASE_SYSTEM_PROMPT = (
     "You are a helpful betting and customer support assistant for a sports betting platform."
 )
 
+# Create agent once at module level — conversation history persists across invocations
+# within the same session (same microVM)
+agent = Agent(
+    model=model,
+    tools=[tavily_search, mcp_client],
+    system_prompt=BASE_SYSTEM_PROMPT,
+)
+
 
 @app.entrypoint
 def strands_agent_bedrock(payload):
@@ -45,6 +53,7 @@ def strands_agent_bedrock(payload):
     print("User input:", user_input)
     print("Account ID:", account_id)
 
+    # Update system prompt with accountId if provided
     system_prompt = BASE_SYSTEM_PROMPT
     if account_id:
         system_prompt += (
@@ -52,12 +61,7 @@ def strands_agent_bedrock(payload):
             f"Always use this accountId when calling any customer-specific API "
             f"(getBalance, getCustomerBets, getCustomerTransactions, placeBet, etc.)."
         )
-
-    agent = Agent(
-        model=model,
-        tools=[tavily_search, mcp_client],
-        system_prompt=system_prompt,
-    )
+    agent.system_prompt = system_prompt
 
     response = agent(user_input)
     return response.message['content'][0]['text']
