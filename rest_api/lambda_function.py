@@ -31,9 +31,6 @@ promotions_table = dynamodb.Table(f"{TABLE_PREFIX}Promotions")
 transactions_table = dynamodb.Table(f"{TABLE_PREFIX}Transactions")
 tickets_table = dynamodb.Table(f"{TABLE_PREFIX}SupportTickets")
 
-DEFAULT_ACCOUNT_ID = "default"
-
-
 # --- Helpers ---
 
 class DecimalEncoder(json.JSONEncoder):
@@ -54,10 +51,9 @@ def respond(status_code, body):
     }
 
 
-def _get_account(account_id=None):
-    """Get an account by ID. Falls back to DEFAULT_ACCOUNT_ID if not provided."""
-    aid = account_id or DEFAULT_ACCOUNT_ID
-    result = accounts_table.get_item(Key={"accountId": aid})
+def _get_account(account_id):
+    """Get an account by ID. Returns None if not found."""
+    result = accounts_table.get_item(Key={"accountId": account_id})
     if "Item" not in result:
         return None
     return result["Item"]
@@ -149,8 +145,10 @@ def lambda_handler(event, context):
         event_id = body.get("eventId")
         selection = body.get("selection")
         stake = body.get("stake", 0)
-        account_id = body.get("accountId", DEFAULT_ACCOUNT_ID)
+        account_id = body.get("accountId")
 
+        if not account_id:
+            return respond(400, {"error": "accountId is required"})
         if not event_id or not selection:
             return respond(400, {"error": "eventId and selection are required"})
 
@@ -230,7 +228,9 @@ def lambda_handler(event, context):
     # GET /account/balance
     if path == "/account/balance" and method == "GET":
         query_params = event.get("queryStringParameters") or {}
-        account_id = query_params.get("accountId", DEFAULT_ACCOUNT_ID)
+        account_id = query_params.get("accountId")
+        if not account_id:
+            return respond(400, {"error": "accountId query parameter is required"})
         account = _get_account(account_id)
         if not account:
             return respond(404, {"error": f"Account '{account_id}' not found"})
