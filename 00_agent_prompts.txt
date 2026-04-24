@@ -7,7 +7,7 @@
 # ============================================================
 
 ## 1.1 Main demo prompt
-I have a budget of $50. Find me the best value football bet right now — check the events, compare the odds, pick the one with the highest potential return, and place the bet for me. Then show me my updated balance.
+Find me the best value football bet right now — check the events, compare the odds, pick the one with the highest potential return, and present it to me.
 
 ## 1.2 Cross-domain reasoning (follow-up)
 Are there any promotions I could have used for that bet?
