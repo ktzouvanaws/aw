@@ -34,7 +34,7 @@ mcp_client = MCPClient(
 os.environ["TAVILY_API_KEY"] = "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"
 
 # AgentCore Memory — replace with your memory ID from 09_deploy_memory.ipynb
-MEMORY_ID = os.environ.get("MEMORY_ID", "REPLACE_WITH_YOUR_MEMORY_ID")
+MEMORY_ID = os.environ.get("MEMORY_ID", "agentic_ai_demo-AwrsGjE0oe")
 
 BASE_SYSTEM_PROMPT = (
     "You are a helpful betting and customer support assistant for a sports betting platform. "
