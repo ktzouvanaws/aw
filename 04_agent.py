@@ -2,8 +2,7 @@ import os
 from strands import Agent
 from strands.models import BedrockModel
 from strands_tools.tavily import tavily_search
-from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from bedrock_agentcore.context import RequestContext
+from bedrock_agentcore import BedrockAgentCoreApp, RequestContext
 
 from mcp_proxy_for_aws.client import aws_iam_streamablehttp_client
 from strands.tools.mcp import MCPClient
