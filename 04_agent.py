@@ -89,7 +89,6 @@ def strands_agent_bedrock(payload, context: RequestContext):
     )
 
     response = agent(user_input)
-    session_manager.close()  # flush any buffered messages to memory
     return response.message['content'][0]['text']
 
 
