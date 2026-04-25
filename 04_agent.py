@@ -9,6 +9,7 @@ from strands.tools.mcp import MCPClient
 
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
+from strands_tools.agent_core_memory import AgentCoreMemoryToolProvider
 
 
 app = BedrockAgentCoreApp()
@@ -38,6 +39,8 @@ MEMORY_ID = os.environ.get("MEMORY_ID", "agentic_ai_demo-AwrsGjE0oe")
 
 BASE_SYSTEM_PROMPT = (
     "You are a helpful betting and customer support assistant for a sports betting platform. "
+    "You have access to a Memory tool that lets you store and retrieve user preferences. "
+    "Always check memory first before asking the user for information they may have already shared. "
     "Use everything you know about the user from previous conversations to provide personalized responses."
 )
 
@@ -66,7 +69,10 @@ def strands_agent_bedrock(payload, context: RequestContext):
             f"(getBalance, getCustomerBets, getCustomerTransactions, placeBet, etc.)."
         )
 
-    # Configure memory — scoped per customer (actor) and session
+    # Namespace for long-term preference retrieval (matches PreferenceLearner template)
+    preference_namespace = f"/preferences/user/{account_id}/"
+
+    # Configure short-term memory — scoped per customer (actor) and session
     memory_config = AgentCoreMemoryConfig(
         memory_id=MEMORY_ID,
         session_id=session_id,
@@ -78,11 +84,19 @@ def strands_agent_bedrock(payload, context: RequestContext):
         region_name=REGION,
     )
 
-    # Create agent with memory session manager
-    # The session manager handles loading previous turns and saving new ones
+    # Configure long-term memory tool — enables the agent to store/retrieve preferences
+    memory_tool_provider = AgentCoreMemoryToolProvider(
+        memory_id=MEMORY_ID,
+        actor_id=account_id,
+        session_id=session_id,
+        namespace=preference_namespace,
+        region=REGION,
+    )
+
+    # Create agent with both session manager (short-term) and memory tool (long-term)
     agent = Agent(
         model=model,
-        tools=[tavily_search, mcp_client],
+        tools=[tavily_search, mcp_client] + memory_tool_provider.tools,
         system_prompt=system_prompt,
         session_manager=session_manager,
     )
