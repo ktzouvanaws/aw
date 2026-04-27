@@ -39,7 +39,7 @@ os.environ["TAVILY_API_KEY"] = "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
 MEMORY_ID = os.environ.get("MEMORY_ID", "agentic_ai_demo-AwrsGjE0oe")
 
 # Bedrock Knowledge Base — replace with your KB ID from 09_deploy_kb.ipynb
-os.environ["KNOWLEDGE_BASE_ID"] = os.environ.get("KNOWLEDGE_BASE_ID", "REPLACE_WITH_YOUR_KB_ID")
+os.environ["KNOWLEDGE_BASE_ID"] = os.environ.get("KNOWLEDGE_BASE_ID", "MCJNMES8UI")
 os.environ.setdefault("AWS_REGION", REGION)
 
 BASE_SYSTEM_PROMPT = (
