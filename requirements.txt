@@ -9,3 +9,4 @@ duckduckgo-search
 mcp
 mcp-proxy-for-aws
 urllib3<2
+nbformat
