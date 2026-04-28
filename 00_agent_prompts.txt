@@ -39,3 +39,10 @@ Can you pull up my account details and show me my recent transactions? I think a
 
 ## 2.6 Full support escalation — multi-step
 I'm a new customer, I deposited $200 yesterday but I don't see the welcome bonus in my account. Can you check my deposit history, verify I'm eligible for the Welcome Bonus promotion, and tell me when I should expect it?
+
+# ============================================================
+# SCENARIO 3: KIRO
+# ============================================================
+## 2.1 Config Fix 
+Notice that across this codebase there is a repeat of account Ids, regions, in general the same values are hardcoded from place to place. propose a mechanist to have all this information in one place
+
